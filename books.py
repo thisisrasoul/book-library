@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import *
+import mysql.connector 
 
 class book_class():
     book = []
@@ -7,7 +8,7 @@ class book_class():
 
 root=tk.Tk()
 root.title("book")
-root.geometry("800x400")
+root.geometry("900x400")
 
 name_var=tk.StringVar()
 author_var=tk.StringVar()
@@ -41,11 +42,30 @@ def report():
             count_var.set("")
             sold_customer_var.set("")
 
+def sold_report():
+    sold_price=0
+    sold_count=0
+    if book_class.solds_book:
+        output.delete('1.0',END)
+        for books in book_class.solds_book:
+            sold_price = (int(books["price"]) + sold_price)
+            sold_count = sold_count + 1  
+        output.insert('1.0',"sold book salary: " + str(sold_price)+ " - sold book count: "+ str(sold_count))
+    
+    else:
+        output.delete('1.0',END)
+        output.insert(END,"there isnt any sold books")
+        name_var.set("")
+        author_var.set("")
+        price_var.set("")
+        count_var.set("")
+        sold_customer_var.set("")
+
 def sell_report():
     if book_class.solds_book:
         output.delete('1.0',END)
         for books in book_class.solds_book:
-            output.insert('1.0',"name: "+books["name"] + " - price: "+str(books["price"])+ "buyername: "+ books["buyername"] + ". \n")          
+            output.insert('1.0',"name: "+books["name"] + " - price: "+str(books["price"])+ " - buyername: "+ books["buyername"] + ". \n")          
         name_var.set("")
         author_var.set("")
         price_var.set("")
@@ -107,7 +127,7 @@ def sell_button():
             price_var.set("")
             count_var.set("")
             sold_customer_var.set("")
-             
+            break             
         else:
             output.delete('1.0',END)
             output.insert(END,"worng entries")
@@ -146,29 +166,31 @@ def search_button():
             sold_customer_var.set("")
 
 def clear_button():
-     print("")
-
+    output.delete('1.0',END)
+    name_var.set("")
+    author_var.set("")
+    price_var.set("")
+    count_var.set("")
+    sold_customer_var.set("")
+    
 name_label = tk.Label(root, text = 'book name')
 name_entry = tk.Entry(root,textvariable = name_var)
-
 author_label = tk.Label(root, text = 'author')
 author_entry=tk.Entry(root, textvariable = author_var)
-
 price_lable=tk.Label(root,text= 'price')
 price_entry=tk.Entry(root,textvariable= price_var)
-
 count_lable=tk.Label(root,text= 'count')
 count_entry=tk.Entry(root,textvariable= count_var)
-
 sold_customer_lable=tk.Label(root,text= 'buyer name (Enter just for sell option)')
 sold_customer_entry=tk.Entry(root,textvariable= sold_customer_var)
-
 add_but=tk.Button(root,text = 'Add', command = add_button)
 sell_but=tk.Button(root,text = 'Sell', command = sell_button)
 report_but=tk.Button(root,text = 'Report', command = report)
 sell_rep_but=tk.Button(root,text = 'sell report', command = sell_report)
 search_but=tk.Button(root,text= 'search',command = search_button)
-
+clear_but=tk.Button(root,text= 'clear',command = clear_button)
+exit_but=tk.Button(root,text= 'exit',command = root.destroy)
+sold_report_but=tk.Button(root,text= 'sold report',command = sold_report)
 output = tk.Text(root, height = 5, width = 65, bg = "gray",pady=30)
 
 name_label.grid(row=0,column=0, sticky = W)
@@ -185,7 +207,10 @@ add_but.grid(row=0,column=3)
 sell_but.grid(row=1,column=3)
 report_but.grid(row=2,column=3)
 sell_rep_but.grid(row=3,column=3,padx=20,sticky=E)
+sold_report_but.grid(row=3,column=4)
 search_but.grid(row=4,column=3)
+clear_but.grid(row=5,column=3)
+exit_but.grid(row=5,column=4)
 output.grid(row=7,column=0,pady=20)
 
 root.mainloop()
@@ -198,7 +223,8 @@ def book_menu():
         print("4. sell a book")
         print("5. Display all book")
         print("6. Display sold book")
-        print("7. Exit\n")
+        print("7. Display all sold book")
+        print("8. Exit\n")
 
 def sold_books_def(name,author,price,buyername):
         soldbooks = {"name": name, "author": author, "price": price, "buyername": buyername} 
@@ -250,16 +276,26 @@ def update_book():
             print("book not found.")
 
 def sell_book():
+        
         name = input("Enter the name of the book to sell: ")
-        for books in book_class.book: 
+        for books in book_class.book:
             buyername = input("Enter the buyer name : ")
-            if books["name"].lower() == name.lower():
-                sold_books_def(books["name"],books["author"],books["price"],buyername)
+            if books["name"].lower() == name.lower() and int(books["count"]) == 1:
+                soldbooks = {"name": name, "author": books["author"], "price": books["price"], "buyername":buyername } 
+                book_class.solds_book.append(soldbooks) 
                 book_class.book.remove(books)
                 print("book deleted successfully!")
                 break
-        else:
-            print("book not found.")
+            elif books["name"].lower() == name.lower() and int(books["count"]) >=2 :
+                updatebook = {"name": name, "author": books["author"], "price": books["price"], "count":int(books["count"]) - 1}
+                soldbooks = {"name": name, "author": books["author"], "price": books["price"], "buyername":buyername } 
+                book_class.solds_book.append(soldbooks) 
+                book_class.book.append(updatebook)
+                book_class.book.remove(books)
+              
+                break             
+            else:
+                 print("we havent this book.")
 
 def display_all_books():
 
@@ -282,9 +318,23 @@ def dis_sold_books():
                 print("name:", soldbooks["name"])
                 print("author:", soldbooks["author"])
                 print("price:", soldbooks["price"])
+                print("buyer name:", soldbooks["buyername"])
                 print("-------------------") 
         else:
             print("No book sold.")
+
+def report_all_sold():
+    sold_price=0
+    sold_count=0
+    if book_class.solds_book:
+        for books in book_class.solds_book:
+            sold_price = (int(books["price"]) + sold_price)
+            sold_count = sold_count + 1  
+        print("sold book salary: " + str(sold_price)+ " - sold book count: "+ str(sold_count))
+        print("-------------------") 
+    else:
+        print("there isnt any sold books")
+
 
 while True:
     
@@ -304,6 +354,8 @@ while True:
     elif choice == "6":
         dis_sold_books()
     elif choice == "7":
+         report_all_sold()
+    elif choice == "8":
         print("Exiting the program...")
         break 
     else:
